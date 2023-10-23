@@ -1,0 +1,69 @@
+- answer: There are 22 observed allergies.
+  input: How many distinct allergies we have?
+  sql_cmd: SELECT count(distinct(code)) FROM allergies;
+  sql_result: '[(22,)]'
+  table_info: |
+    CREATE TABLE allergies
+    (
+        start date NULL,
+	    stop date NULL,
+	    patient varchar(1000) NULL,
+	    encounter varchar(1000) NULL,
+	    code varchar(100) NULL,
+	    description [varchar](255) NULL
+    )
+
+    /*
+    3 rows from allergies table:
+    "start"	"stop"	"patient"	"encounter"	"code"	"description
+    1	1969-11-04 NULL b34fbb74-ab15-8e6b-5edb-6ce5f3301c32  5beeef7b-8b80-72e9-cb78-7188b5825c41  1191	"Aspirin"
+    2	1999-09-17 NULL 45cafa4a-9331-85ca-5c94-c49442b83831  ec9ef671-3a05-ec4a-2cb5-1e5807db0e9c  264287008	"Animal dander (substance)"
+    3	1999-09-17 NULL 45cafa4a-9331-85ca-5c94-c49442b83831  ec9ef671-3a05-ec4a-2cb5-1e5807db0e9c  256277009	"Grass pollen (substance)"	
+    */
+    
+- answer: There are 200 patients witn an allergie.
+  input: How many patient is having an allergie?
+  sql_cmd: SELECT count(distinct(patient)) FROM allergies WHERE stop is null;
+  sql_result: '[(22,)]'
+  table_info: |
+    CREATE TABLE allergies
+    (
+        start date NULL,
+	    stop date NULL,
+	    patient varchar(1000) NULL,
+	    encounter varchar(1000) NULL,
+	    code varchar(100) NULL,
+	    description [varchar](255) NULL
+    )
+
+    /*
+    3 rows from allergies table:
+    "start"	"stop"	"patient"	"encounter"	"code"	"description
+    1	1969-11-04 NULL b34fbb74-ab15-8e6b-5edb-6ce5f3301c32  5beeef7b-8b80-72e9-cb78-7188b5825c41  1191	"Aspirin"
+    2	1999-09-17 NULL 45cafa4a-9331-85ca-5c94-c49442b83831  ec9ef671-3a05-ec4a-2cb5-1e5807db0e9c  264287008	"Animal dander (substance)"
+    3	1999-09-17 NULL 45cafa4a-9331-85ca-5c94-c49442b83831  ec9ef671-3a05-ec4a-2cb5-1e5807db0e9c  256277009	"Grass pollen (substance)"	
+    */  
+
+- answer: Patient are suffering a lot from "Allergy to substance (finding)".
+  input: What allergie patients are suffering at most?
+  sql_cmd: SELECT description, COUNT(*) as count FROM allergies GROUP BY description ORDER BY count DESC OFFSET 0 ROWS FETCH NEXT 5 ROWS ONLY;
+  sql_result: '[(22,)]'
+  table_info: |
+    CREATE TABLE allergies
+    (
+        start date NULL,
+	    stop date NULL,
+	    patient varchar(1000) NULL,
+	    encounter varchar(1000) NULL,
+	    code varchar(100) NULL,
+	    description [varchar](255) NULL
+    )
+
+    /*
+    3 rows from allergies table:
+    "start"	"stop"	"patient"	"encounter"	"code"	"description
+    1	1969-11-04 NULL b34fbb74-ab15-8e6b-5edb-6ce5f3301c32  5beeef7b-8b80-72e9-cb78-7188b5825c41  1191	"Aspirin"
+    2	1999-09-17 NULL 45cafa4a-9331-85ca-5c94-c49442b83831  ec9ef671-3a05-ec4a-2cb5-1e5807db0e9c  264287008	"Animal dander (substance)"
+    3	1999-09-17 NULL 45cafa4a-9331-85ca-5c94-c49442b83831  ec9ef671-3a05-ec4a-2cb5-1e5807db0e9c  256277009	"Grass pollen (substance)"	
+    */   
+    

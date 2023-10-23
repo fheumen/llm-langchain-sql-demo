@@ -1,10 +1,6 @@
-# Natural Language Query Demo of Amazon RDS for PostgreSQL using SageMaker FM Endpoint
-# Author: Gary A. Stafford
-# Date: 2023-06-25
-# License: MIT
-# Application expects the following environment variables:
-# export REGION_NAME="us-east-1"
-# export SECRET_NAME="genai/rds/creds"
+# Natural Language Query Demo of Amazon RDS for SQLServer using SageMaker FM Endpoint
+# Author: Fabrice Heumeni
+# Date: 2023-10-23
 # Usage: streamlit run app.py --server.runOnSave true
 
 import json
@@ -14,35 +10,49 @@ import os
 import boto3
 import yaml
 from botocore.exceptions import ClientError
-from langchain import (FewShotPromptTemplate, PromptTemplate, SQLDatabase,
-                       SQLDatabaseChain)
-from langchain.chains.sql_database.prompt import (PROMPT_SUFFIX,
-                                                  _postgres_prompt)
+from langchain import (
+    FewShotPromptTemplate,
+    PromptTemplate,
+    SQLDatabase
+    #SQLDatabaseChain,
+)
+
+from langchain_experimental.sql import SQLDatabaseChain
+
+from langchain.chains.sql_database.prompt import PROMPT_SUFFIX, _postgres_prompt
 from langchain.chat_models import ChatOpenAI
 from langchain.embeddings.huggingface import HuggingFaceEmbeddings
 from langchain.llms import OpenAI
-from langchain.prompts.example_selector.semantic_similarity import \
-    SemanticSimilarityExampleSelector
+from langchain.prompts.example_selector.semantic_similarity import (
+    SemanticSimilarityExampleSelector,
+)
 from langchain.vectorstores import Chroma
 from streamlit_chat import message
 
 import streamlit as st
-
-REGION_NAME = os.environ.get("REGION_NAME", "us-east-1")
-SECRET_NAME = os.environ.get("SECRET_NAME")
-
 
 def main():
     st.set_page_config(page_title="Natural Language Query (NLQ) Demo")
 
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-    llm = OpenAI(model_name="text-davinci-003", temperature=0, verbose=True)
+    llm = OpenAI(model_name="text-davinci-003", temperature=0, verbose=True, openai_api_key=os.environ.get("OPENAI_API_KEY"))
     # llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0, verbose=True)
 
     # define datasource uri
-    secret = get_secret(SECRET_NAME, REGION_NAME)
-    rds_uri = get_rds_uri(secret)
+    # secret = get_secret(SECRET_NAME, REGION_NAME)
+    # rds_uri = get_rds_uri(secret)
+    server = os.environ.get("RDS_SERVER_NAME")
+    database = os.environ.get("RDS_DB_NAME")
+    driver = os.environ.get("RSD_DRIVER_NAME")
+
+    rds_uri = 'mssql+pyodbc:///?odbc_connect=' \
+                'Driver='+ driver + \
+                ';Server=' + server + \
+                ';DATABASE=' + database + \
+                ';integratedSecurity=true;trusted_Connection=yes;'
+
+
     db = SQLDatabase.from_uri(rds_uri)
 
     # load examples for few-shot prompting
@@ -95,18 +105,19 @@ def main():
 
     if st.session_state["generated"]:
         for i in range(len(st.session_state["generated"]) - 1, -1, -1):
-            message(st.session_state["generated"][i],
-                    key=str(i),
-                    is_user=False,
-                    avatar_style="icons",
-                    seed="459"
-                   )
+            message(
+                st.session_state["generated"][i],
+                key=str(i),
+                is_user=False,
+                avatar_style="icons",
+                seed="459",
+            )
             message(
                 st.session_state["past"][i],
-                is_user=True, 
+                is_user=True,
                 key=str(i) + "_user",
                 avatar_style="icons",
-                seed="158"
+                seed="158",
             )
 
 
@@ -139,7 +150,7 @@ def load_samples():
     # Use the corrected examples for few-shot prompting examples
     sql_samples = None
 
-    with open("sql_examples_postgresql.yaml", "r") as stream:
+    with open("few_shot_examples/sql_examples_postgresql.yaml", "r") as stream:
         sql_samples = yaml.safe_load(stream)
 
     return sql_samples

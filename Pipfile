@@ -1,0 +1,24 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+langchain = "*"
+ipywidgets = "*"
+openai = "*"
+python-dotenv = "*"
+chromadb = "*"
+sentence-transformers = "*"
+pinecone-client = "*"
+pyyaml = "*"
+black = "*"
+boto3 = "*"
+langchain-experimental = "*"
+streamlit-chat = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"
+python_full_version = "3.11.5"
