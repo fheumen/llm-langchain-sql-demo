@@ -9,17 +9,18 @@ import os
 
 import boto3
 import yaml
+from typing import Dict
 from botocore.exceptions import ClientError
 from langchain import (
     FewShotPromptTemplate,
     PromptTemplate,
-    SQLDatabase
-    #SQLDatabaseChain,
+    SQLDatabase,
+    # SQLDatabaseChain,
 )
 
 from langchain_experimental.sql import SQLDatabaseChain
 
-from langchain.chains.sql_database.prompt import PROMPT_SUFFIX, _postgres_prompt
+from langchain.chains.sql_database.prompt import PROMPT_SUFFIX, _mssql_prompt
 from langchain.chat_models import ChatOpenAI
 from langchain.embeddings.huggingface import HuggingFaceEmbeddings
 from langchain.llms import OpenAI
@@ -30,28 +31,44 @@ from langchain.vectorstores import Chroma
 from streamlit_chat import message
 
 import streamlit as st
+import pyodbc
+
+
+server = os.environ.get("RDS_SERVER_NAME")
+database = os.environ.get("RDS_DB_NAME")
+driver = os.environ.get("RSD_DRIVER_NAME")
+openai_api_key = os.environ.get("OPENAI_API_KEY")
+
 
 def main():
     st.set_page_config(page_title="Natural Language Query (NLQ) Demo")
 
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-    llm = OpenAI(model_name="text-davinci-003", temperature=0, verbose=True, openai_api_key=os.environ.get("OPENAI_API_KEY"))
-    # llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0, verbose=True)
+    # llm = OpenAI(model_name="text-davinci-003", temperature=0, verbose=True, openai_api_key=openai_api_key)
+    llm = ChatOpenAI(
+        model_name="gpt-3.5-turbo-16k-0613",
+        temperature=0,
+        verbose=True,
+        openai_api_key=openai_api_key,
+    )
 
     # define datasource uri
     # secret = get_secret(SECRET_NAME, REGION_NAME)
     # rds_uri = get_rds_uri(secret)
-    server = os.environ.get("RDS_SERVER_NAME")
-    database = os.environ.get("RDS_DB_NAME")
-    driver = os.environ.get("RSD_DRIVER_NAME")
 
-    rds_uri = 'mssql+pyodbc:///?odbc_connect=' \
-                'Driver='+ driver + \
-                ';Server=' + server + \
-                ';DATABASE=' + database + \
-                ';integratedSecurity=true;trusted_Connection=yes;'
-
+    # print("tototototototototototo")
+    # print(driver)
+    rds_uri = (
+        "mssql+pyodbc:///?odbc_connect="
+        "Driver="
+        + driver
+        + ";Server="
+        + server
+        + ";DATABASE="
+        + database
+        + ";integratedSecurity=true;trusted_Connection=yes;"
+    )
 
     db = SQLDatabase.from_uri(rds_uri)
 
@@ -92,8 +109,10 @@ def main():
 
     if user_input:
         st.session_state.past.append(user_input)
+        #example: any
         try:
             output = sql_db_chain.run(query=user_input)
+            #example = _parse_example(output)
             st.session_state.generated.append(output)
             logging.info(st.session_state["query"])
             logging.info(st.session_state["generated"])
@@ -102,6 +121,12 @@ def main():
                 "I'm sorry, I was not able to answer your question."
             )
             logging.error(exc)
+
+        ######Examples Building, in reality you may want to write this out to a YAML file or database for manual fix-ups offline
+        # yaml_example = yaml.dump(example, allow_unicode=True)
+        # with open("few_shot_examples\sql_examples_mssql.yaml", "a") as file:
+        #     yaml.dump(example, file, allow_unicode=True)
+        # print("\n" + yaml_example)
 
     if st.session_state["generated"]:
         for i in range(len(st.session_state["generated"]) - 1, -1, -1):
@@ -150,7 +175,7 @@ def load_samples():
     # Use the corrected examples for few-shot prompting examples
     sql_samples = None
 
-    with open("few_shot_examples/sql_examples_postgresql.yaml", "r") as stream:
+    with open("few_shot_examples\sql_examples_mssql.yaml", "r") as stream:
         sql_samples = yaml.safe_load(stream)
 
     return sql_samples
@@ -176,7 +201,7 @@ def load_few_shot_chain(llm, db, examples):
     few_shot_prompt = FewShotPromptTemplate(
         example_selector=example_selector,
         example_prompt=example_prompt,
-        prefix=_postgres_prompt + "Here are some examples:",
+        prefix=_mssql_prompt + "Here are some examples:",
         suffix=PROMPT_SUFFIX,
         input_variables=["table_info", "input", "top_k"],
     )
@@ -219,17 +244,17 @@ def build_sidebar():
         """
         )
 
-        st.subheader("MoMa Collection Database")
+        st.subheader("OMOP CDM Database")
         st.write(
             """
-        [The Museum of Modern Art Collection](https://www.moma.org/collection/) contains two tables: 'artists' and 'artworks', with ~121,000 pieces of artwork and ~15,000 artists.
+        [The Observational Medical Outcomes Partnership (OMOP) Common Data Model (CDM)](https://ohdsi.github.io/CommonDataModel/) contains tables allowing the systematic analysis of healthcare observational databases.
         """
         )
 
-        st.subheader("Amazon SageMaker Studio")
+        st.subheader("Pycharm Professional Developers")
         st.write(
             """
-        [Amazon SageMaker Studio](https://aws.amazon.com/sagemaker/studio/) is a fully integrated development environment (IDE) where you can perform all machine learning (ML) development steps, from preparing data to building, training, and deploying your ML models, including [JumpStart Foundation Models](https://docs.aws.amazon.com/sagemaker/latest/dg/jumpstart-foundation-models.html).
+        [Pycharm Pro ](https://www.jetbrains.com/pycharm/) is a fully integrated development environment (IDE) where you can perform all machine learning (ML) development steps, from preparing data to building, training, and deploying your ML models. 
         """
         )
 
@@ -288,6 +313,37 @@ def build_form(col1, col2):
 def clear_session():
     for key in st.session_state.keys():
         del st.session_state[key]
+
+
+def _parse_example(result: Dict) -> Dict:
+    sql_cmd_key = "sql_cmd"
+    sql_result_key = "sql_result"
+    table_info_key = "table_info"
+    input_key = "input"
+    final_answer_key = "answer"
+
+    _example = {
+        "input": result.get("query"),
+    }
+
+    steps = result.get("intermediate_steps")
+    answer_key = sql_cmd_key  # the first one
+    for step in steps:
+        if isinstance(step, dict):
+            if table_info_key not in _example:
+                _example[table_info_key] = step.get(table_info_key)
+
+            if input_key in step:
+                if step[input_key].endswith("SQLQuery:"):
+                    answer_key = sql_cmd_key  # this is the SQL generation input
+                if step[input_key].endswith("Answer:"):
+                    answer_key = final_answer_key  # this is the final answer input
+            elif sql_cmd_key in step:
+                _example[sql_cmd_key] = step[sql_cmd_key]
+                answer_key = sql_result_key  # this is SQL execution input
+        elif isinstance(step, str):
+            _example[answer_key] = step
+    return _example
 
 
 if __name__ == "__main__":

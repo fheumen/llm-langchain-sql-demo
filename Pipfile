@@ -16,6 +16,8 @@ black = "*"
 boto3 = "*"
 langchain-experimental = "*"
 streamlit-chat = "*"
+pyodbc = "*"
+tiktoken = "*"
 
 [dev-packages]
 
