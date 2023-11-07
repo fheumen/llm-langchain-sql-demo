@@ -290,19 +290,10 @@ def build_form(col1, col2):
             with st.expander("Sample questions (copy and paste)"):
                 st.text(
                     """
-                How many artists are there in the collection?
-                How many pieces of artwork are there in the collection?
-                How many paintings are in the collection?
-                How many artists are there whose nationality is French?
-                How many artworks were created by Spanish artists?
-                How many artist names start with the letter 'M'?
-                Who is the most prolific artist in the collection? What is their nationality?
-                What nationality of artists created the most artworks in the collection?
-                What is the ratio of male to female artists? Return as ratio of n:1.
-                How many artworks are by the artist, Claude Monet?
-                What are the five oldest artworks in the collection? Return the title and date for each.
-                For artist Frida Kahlo, return the title and medium of each artwork in a numbered list.
-                Give me a recipe for chocolate cake.
+                How many distinct allergies we have?
+                How many patient is having an allergie?
+                What allergie patients are suffering at most?
+                What is the most used medications description?
                 """
                 )
     with col2:
